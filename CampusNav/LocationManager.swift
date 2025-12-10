@@ -23,10 +23,11 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
         
         manager.requestWhenInUseAuthorization()
         
-        manager.startUpdatingLocation() // Starts monitoring location
+        // Starts live location tracking
+        manager.startUpdatingLocation()
     }
     
-    // Defining region for geofencing
+    // Defining region for geofencing and begin monitoring
     func startMonitoring(latitude: Double, longitude: Double, radius: Double) {
         let center = CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
         let region = CLCircularRegion(center: center, radius: radius, identifier: "CSUF Campus")
@@ -39,9 +40,16 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
     
     // Updates location live
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]){
-        guard let location = locations.last else {return}
+        guard let location = locations.last else { return }
         
         self.userLocation = location.coordinate
+        
+        // print("TEST - New location: \(location.coordinate)")
+    }
+    
+    // Handle live location update errors
+    func locationManager(_ manager: CLLocationManager, didFailWithError error: any Error) {
+        print("Location update failed: \(error.localizedDescription)")
     }
     
     // Geofencing triggers on entry/exit, currently only for testing
@@ -53,7 +61,7 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
         print("Exited campus")
     }
     
-    // Check if monitoring failed and handle error
+    // Handle geofencing errors
     func locationManager(_ manager: CLLocationManager, monitoringDidFailFor region: CLRegion?, withError error: Error) {
         print("Monitoring failed: \(error.localizedDescription)")
     }
