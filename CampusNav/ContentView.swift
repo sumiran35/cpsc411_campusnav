@@ -1,32 +1,32 @@
 import SwiftUI
 import CoreData
+import CoreLocation
 
 struct ContentView: View {
-    @StateObject private var locationManager = LocationManager()
     var body: some View {
-        VStack {
-            // Keep empty
-        }.onAppear {
-            // Start geofencing as soon as app opens
-            locationManager.startMonitoring(latitude: 33.8823, longitude: -117.8851, radius: 900)
-        }
-        
-        //Tab view
-        TabView {
-            //first tab
-            CampusMapView().tabItem {
-                Label("Campus Map", systemImage: "map.fill")
-            }
-            //second tab
-            BuildingListView().tabItem {
-                Label("Directory", systemImage: "list.bullet")
-            }
-            
-        }.accentColor(.blue)
+        CampusMapView()
     }
 }
 
-#Preview {
-    ContentView()
+struct ContentView_Previews: PreviewProvider {
+    static var previews: some View {
+
+        // fake campus location only for Canvas
+        let previewLocationManager = LocationManager()
+        previewLocationManager.userLocation = CLLocationCoordinate2D(
+            latitude: 33.8823,   // CSUF latitude
+            longitude: -117.8851 // CSUF longitude
+        )
+
+        return ContentView()
+            .environment(
+                \.managedObjectContext,
+                PersistenceController.preview.container.viewContext
+            )
+            .environmentObject(previewLocationManager)
+            .environmentObject(DirectionsViewModel())
+            .environmentObject(CampusSearchViewModel())
+            .preferredColorScheme(.dark)
+    }
 }
 

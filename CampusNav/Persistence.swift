@@ -6,52 +6,85 @@
 //
 
 import CoreData
+import SwiftUI
+import Combine
 
-struct PersistenceController {
+@MainActor
+final class PersistenceController: ObservableObject {
+
     static let shared = PersistenceController()
 
-    @MainActor
+    // Published error state (UI can react)
+    @Published var persistentStoreError: String?
+
+    // Core Data stack
+    let container: NSPersistentContainer
+
+    // Preview
     static let preview: PersistenceController = {
-        let result = PersistenceController(inMemory: true)
-        let viewContext = result.container.viewContext
+        let controller = PersistenceController(inMemory: true)
+        let viewContext = controller.container.viewContext
+
         for _ in 0..<10 {
             let newItem = Item(context: viewContext)
             newItem.timestamp = Date()
         }
+
         do {
             try viewContext.save()
         } catch {
-            // Replace this implementation with code to handle the error appropriately.
-            // fatalError() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
-            let nsError = error as NSError
-            fatalError("Unresolved error \(nsError), \(nsError.userInfo)")
+            print("Preview Core Data save error:", error)
         }
-        return result
+
+        return controller
     }()
 
-    let container: NSPersistentContainer
-
+    // Init
     init(inMemory: Bool = false) {
-        container = NSPersistentContainer(name: "CampusNav")
-        if inMemory {
-            container.persistentStoreDescriptions.first!.url = URL(fileURLWithPath: "/dev/null")
-        }
-        container.loadPersistentStores(completionHandler: { (storeDescription, error) in
-            if let error = error as NSError? {
-                // Replace this implementation with code to handle the error appropriately.
-                // fatalError() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
 
-                /*
-                 Typical reasons for an error here include:
-                 * The parent directory does not exist, cannot be created, or disallows writing.
-                 * The persistent store is not accessible, due to permissions or data protection when the device is locked.
-                 * The device is out of space.
-                 * The store could not be migrated to the current model version.
-                 Check the error message to determine what the actual problem was.
-                 */
-                fatalError("Unresolved error \(error), \(error.userInfo)")
+        container = NSPersistentContainer(name: "CampusNav")
+
+        if inMemory {
+            container.persistentStoreDescriptions.first?.url =
+                URL(fileURLWithPath: "/dev/null")
+        }
+
+        container.loadPersistentStores { [weak self] storeDescription, error in
+            guard let self else { return }
+
+            if let error = error as NSError? {
+
+                print("Core Data store failed to load:", error)
+
+                self.persistentStoreError = """
+                Storage could not be loaded.
+                The app is running in offline mode.
+                Error: \(error.localizedDescription)
+                """
+
+                // Fallback to in-memory store
+                let fallback = NSPersistentStoreDescription()
+                fallback.type = NSInMemoryStoreType
+
+                self.container.persistentStoreDescriptions = [fallback]
+
+                self.container.loadPersistentStores { _, fallbackError in
+                    if let fallbackError {
+                        print("Fallback store failed:", fallbackError)
+                    } else {
+                        print("Using in-memory Core Data store")
+                    }
+                }
+
+                return
             }
-        })
+
+            print("Core Data store loaded:",
+                  storeDescription.url?.absoluteString ?? "")
+        }
+
         container.viewContext.automaticallyMergesChangesFromParent = true
+        container.viewContext.mergePolicy =
+            NSMergeByPropertyObjectTrumpMergePolicy
     }
 }
