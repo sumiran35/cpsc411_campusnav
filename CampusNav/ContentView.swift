@@ -11,7 +11,7 @@ struct ContentView: View {
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
 
-        // fake campus location only for Canvas
+        // fake campus location only for Canvas simulator
         let previewLocationManager = LocationManager()
         previewLocationManager.userLocation = CLLocationCoordinate2D(
             latitude: 33.8823,   // CSUF latitude

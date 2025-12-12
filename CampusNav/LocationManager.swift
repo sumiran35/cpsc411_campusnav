@@ -30,7 +30,7 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
         // Detects if using swiftUI canvas
         if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
 
-            // 🔒 Freeze location for Canvas
+            //Freeze location for Canvas
             userLocation = CLLocationCoordinate2D(
                 latitude: 33.8823,   // CSUF
                 longitude: -117.8851
